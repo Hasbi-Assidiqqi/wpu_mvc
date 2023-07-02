@@ -1,29 +1,33 @@
 <div class="container mt-4">
-    
-<div class="row">
-    <div class="col-lg-6">
-        <?php Flasher::flash(); ?>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <?php Flasher::flash(); ?>
+        </div>
     </div>
-</div>
 
     <div class="row">
         <div class="col-lg-6">
             <h3 class="mb-4">Daftar Mahasiswa</h3>
 
-            <!-- Button trigger modal -->
-            <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalTambah">
-                Tambah Data Mahasiswa
-            </button>
+            <div class="row">
+                <div class="col-lg-6 col-md-6 col-sm-12">
+                    <div class="input-group mb-3">
+                        <!-- Button trigger modal -->
+                        <button type="button" class="btn btn-primary mb-3 tombolTambahData" data-bs-toggle="modal" data-bs-target="#modalTambah" value="Tambah Data">Tambah Data Mahasiswa </button>
+                    </div>
+                </div>
+                <div class="input-group mb-3">
+                    <input type="text" class="search form-control" id="search" placeholder="Nama Mahasiswa" aria-label="Nama Mahasiswa" aria-describedby="button-addon2">
+                    <button class="btn btn-primary" type="button" id="button-addon2">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
 
-            <ul class="list-group">
-                <?php foreach ($data['mhs'] as $mhs) : ?>
-                    <li class="list-group-item">
-                        <?= $mhs['nama'] ?>
-                        <a href="<?= BASEURL; ?>mahasiswa/hapus/<?= $mhs['id'] ?>" class="badge text-bg-danger float-end" onclick="return confirm('Yakin ingin menghapus data?');">Hapus</a>
-                        <a href="<?= BASEURL; ?>mahasiswa/detail/<?= $mhs['id'] ?>" class="badge text-bg-primary float-end me-1">Detail</a>
-                    </li>
-                <?php endforeach ?>
-            </ul>
+            </div>
+
+            <!-- tampilkan data -->
+            <div id="tampil"></div>
         </div>
     </div>
 
@@ -38,20 +42,21 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="<?= BASEURL; ?>mahasiswa/tambah" method="POST">
+                <input type="hidden" name="id" id="id">
                 <div class="modal-body">
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label for="nama" class="form-label">Nama</label>
                         <input type="text" class="form-control" id="nama" name="nama">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label for="nim" class="form-label">NIM</label>
                         <input type="number" class="form-control" id="nim" name="nim">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label for="email" class="form-label">Email</label>
                         <input type="email" class="form-control" id="email" name="email">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label for="jurusan" class="form-label">Jurusan</label>
                         <select class="form-control" id="jurusan" name="jurusan">
                             <option disabled selected value>Pilih Jurusan</option>
@@ -71,3 +76,85 @@
         </div>
     </div>
 </div>
+
+<script>
+    $(function() {
+        // cari class dengan nama 'tombolTambahData' ketika diklick ubah isi tag dengan id 'judulModal' menjadi 'Tambah Data Mahasiswa'
+        $(document).on('click', '.tombolTambahData', function() {
+            $('#judulModal').html('Tambah Data Mahasiswa')
+            // cari tag button dengan tipe submit pada class 'modal-footer' kemudian ubah isinya menjadi 'Tambah Data'
+            $('.modal-footer button[type=submit]').html('Tambah Data')
+            $('.modal-content form').attr('action', 'http://localhost/wpu_mvc/public/mahasiswa/tambah')
+        })
+
+        // ubah
+        $(document).on('click', '.tampilModalUbah', function() {
+            $('#judulModal').html('Ubah Data Mahasiswa');
+            $('.modal-footer button[type=submit]').html('Ubah Data');
+            $('.modal-content form').attr('action', 'http://localhost/wpu_mvc/public/mahasiswa/ubah');
+
+            const id = $(this).data('id');
+
+            $.ajax({
+                url: 'http://localhost/wpu_mvc/public/mahasiswa/getUbah',
+                data: {
+                    id: id
+                },
+                method: 'post',
+                dataType: 'json',
+                success: function(data) {
+                    $('#id').val(data.id);
+                    $('#nama').val(data.nama);
+                    $('#nim').val(data.nim);
+                    $('#email').val(data.email);
+                    $('#jurusan').val(data.jurusan);
+                }
+            });
+        });
+
+
+        // searching
+        const loadData = (search) => {
+            $.ajax({
+                type: 'post',
+                url: 'http://localhost/wpu_mvc/public/mahasiswa/ajax_search',
+                data: {
+                    search
+                },
+                dataType: 'html',
+                cache: false,
+                success: (data) => $('#tampil').html(data)
+            });
+        };
+
+        // Tombol cari
+        var searchBtn = $('#button-addon2');
+        // Input search
+        var searchInput = $('#search');
+
+        // Event listener saat input berubah
+        searchInput.on('input', function() {
+            var name = searchInput.val();
+
+            // Jika input tidak kosong, ubah tombol menjadi ikon "X"
+            if (name !== '') {
+                searchBtn.html('<i class="fas fa-times"></i>');
+                $('.search').on('input', () => loadData($('.search').val()));
+
+            } else {
+                searchBtn.html('<i class="fas fa-search"></i>');
+            }
+        });
+
+        // Event listener saat tombol cari diklik
+        searchBtn.on('click', function() {
+            // Jika tombol berisi ikon "X", reset input dan ubah tombol kembali menjadi ikon "Search"
+            if (searchBtn.html().includes('fa-times')) {
+                searchInput.val('');
+                loadData('');
+                searchBtn.html('<i class="fas fa-search"></i>');
+            }
+        });
+
+    });
+</script>
